@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Slice</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI Variable','Segoe UI','Inter','SF Pro Text',system-ui;background:#070b14;color:#e7ecf6}
+.wrap{max-width:1360px;margin:0 auto;padding:22px 18px 40px}.brand{display:flex;gap:10px;align-items:center}.logo{width:24px;height:24px;border-radius:999px;background:conic-gradient(from 210deg,#56e7ff,#5f8cff,#8d6dff,#56e7ff)}
+.sub{color:#9ba7bf;margin-top:6px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;gap:8px}.tab{border:1px solid #2a3c61;background:#101b32;color:#b9c7df;border-radius:10px;padding:6px 10px;cursor:pointer}.tab.active{background:#1a2a4c;color:#eaf0ff}
+.btn{border:1px solid #2a3c61;background:#101b32;color:#b9c7df;border-radius:10px;padding:6px 10px;cursor:pointer}
+.section{margin-top:14px}.hidden{display:none}
+
+.grid1{display:grid;gap:12px;grid-template-columns:1fr}.card{border:1px solid #1d2943;border-radius:12px;overflow:hidden;background:#0d1424}
+.head{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#0d182f;border-bottom:1px solid #1d2943}
+.tableWrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:960px}th,td{padding:6px 8px;border-bottom:1px solid #152036;white-space:nowrap;text-align:left}
+th.sort{cursor:pointer}.arr{font-size:10px;color:#6d7c99}.arr.a{color:#89a8ff}
+.muted{color:#8e9db8}.pos{color:#3ddc84}.neg{color:#ff6b6b}.neu{color:#9ba7bf}.alink{color:inherit;text-decoration:none}.alink:hover{text-decoration:underline;text-decoration-color:#4f7cff}
+.range{display:flex;align-items:center;gap:6px;color:#8e9db8}.track{flex:1;min-width:92px;height:6px;border-radius:999px;background:#20304f;position:relative}.dot{position:absolute;top:50%;width:9px;height:9px;border-radius:999px;background:#70a8ff;transform:translate(-50%,-50%)}
+.main{margin-top:14px;border:1px solid #1d2943;border-radius:14px;overflow:hidden;background:#0d1424}.main table{min-width:1180px}
+
+.newsGrid{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:1100px){.newsGrid{grid-template-columns:1fr}}
+.newsCard{border:1px solid #1d2943;border-radius:12px;background:#0d1424;overflow:hidden}
+.newsCard.dragOver{outline:2px dashed #5f8cff;outline-offset:-2px}
+.newsHead{padding:8px 10px;background:#0d182f;border-bottom:1px solid #1d2943;font-weight:600;cursor:grab;user-select:none}
+.newsHead:active{cursor:grabbing}
+.newsItem{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:8px 10px;border-bottom:1px solid #152036}
+.newsItem.noimg{grid-template-columns:1fr}
+.thumb{width:64px;height:48px;border-radius:6px;object-fit:cover;background:#101b32}
+.newsTitle{font-size:13px;line-height:1.2}.meta{font-size:11px;color:#8e9db8;margin-top:4px}
+</style></head><body><div class="wrap">
+  <div class="brand"><span class="logo"></span><h1 style="margin:0">Slice</h1></div>
+  <div class="sub" id="stamp">Last refreshed: — ET</div>
+
+  <div class="topbar" style="margin-top:10px">
+    <div class="tabs">
+      <button class="tab" data-tab="finance">Finance</button>
+      <button class="tab" data-tab="news">News</button>
+    </div>
+    <button class="btn" id="refreshBtn">⟳ Refresh</button>
+  </div>
+
+  <section id="financeSection" class="section">
+    <div class="grid1" id="financeTop"></div>
+    <div class="main"><div class="head"><b>Top 10</b></div><div class="tableWrap"><table><thead><tr>
+      <th>#</th><th class="sort" data-main="name" data-type="str">Company <span class="arr">↕</span></th>
+      <th class="sort" data-main="currentPrice">Price <span class="arr">↕</span></th>
+      <th class="sort" data-main="changePctToday">Today <span class="arr">↕</span></th>
+      <th class="sort" data-main="ytdPct">YTD <span class="arr">↕</span></th>
+      <th class="sort" data-main="oneYearPct">1Y <span class="arr">↕</span></th>
+      <th class="sort" data-main="threeYearPct">3Y <span class="arr">↕</span></th>
+      <th class="sort" data-main="fiveYearPct">5Y <span class="arr">↕</span></th>
+      <th class="sort" data-main="marketCap">MCap <span class="arr a">↓</span></th>
+      <th class="sort" data-main="week52PosPct">52W <span class="arr">↕</span></th>
+    </tr></thead><tbody id="mainRows"></tbody></table></div></div>
+  </section>
+
+  <section id="newsSection" class="section hidden">
+    <div class="newsGrid" id="newsGrid"></div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id), num=v=>(v==null||isNaN(+v)?-Infinity:+v);
+const money=(n,d=2)=>n==null?'—':`$${(+n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d})}`;
+const pct=n=>n==null?'—':`${n>0?'+':''}${(+n).toFixed(2)}%`; const cls=n=>n==null?'neu':n>0?'pos':n<0?'neg':'neu';
+const cap=n=>n==null?'—':`$${(n/1e12).toFixed(3)}T`; const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const slider=(l,h,p)=>`<div class="range"><span>${money(l,2)}</span><span class="track"><span class="dot" style="left:${Math.max(0,Math.min(100,p??0))}%"></span></span><span>${money(h,2)}</span></div>`;
+function resolvedPrice(x){
+  if(x?.currentPrice!=null && !isNaN(+x.currentPrice)) return +x.currentPrice;
+  const lo=+x?.week52Low, hi=+x?.week52High, pos=+x?.week52PosPct;
+  if(!isNaN(lo)&&!isNaN(hi)&&!isNaN(pos)&&hi>lo) return lo + ((Math.max(0,Math.min(100,pos))/100)*(hi-lo));
+  return null;
+}
+const closeUtcBySymbol={
+  '^IXIC':{h:21,m:0},'^GSPC':{h:21,m:0},
+  '^FTSE':{h:16,m:30},'^GDAXI':{h:16,m:30},'^FCHI':{h:16,m:30},
+  '^N225':{h:6,m:0},'^HSI':{h:8,m:0},
+  '^NSEI':{h:10,m:0},'^BSESN':{h:10,m:0}
+};
+
+const TAB_KEY='slice.activeTab';
+let activeTab=(localStorage.getItem(TAB_KEY)==='news')?'news':'finance';
+let financeData={indexes:[],cryptoTop10:[],etfs:[],topUsMcapTracked:[]};
+let newsData={categories:[]};
+const NEWS_ORDER_KEY='slice.newsOrder';
+let draggedNewsKey=null;
+let mSort={k:'marketCap',d:'desc',t:'num'};
+const cSort={indexes:{k:'closeInMinutes',d:'asc',t:'num'},crypto:{k:'marketCap',d:'desc',t:'num'},etfs:{k:'currentPrice',d:'desc',t:'num'}};
+const showAll={indexes:false,crypto:false,etfs:false};
+const defs=[['indexes','Indexes'],['crypto','Crypto (Top 10)'],['etfs','ETFs']];
+
+function sortRows(rows,s){const r=[...rows];r.sort((a,b)=>{let av=a?.[s.k],bv=b?.[s.k];if(s.t==='str'){av=(av||'').toLowerCase();bv=(bv||'').toLowerCase();if(av===bv)return 0;return s.d==='asc'?(av<bv?-1:1):(av>bv?-1:1);}av=num(av);bv=num(bv);if(av===bv)return 0;return s.d==='asc'?av-bv:bv-av});return r}
+function isWeekendUtc(d){const day=d.getUTCDay();return day===0||day===6}
+function nextBusinessDayUtc(d){const x=new Date(d); do{x.setUTCDate(x.getUTCDate()+1)}while(isWeekendUtc(x)); return x}
+function computeCloseIn(symbol, now=new Date()){
+  const c=closeUtcBySymbol[symbol];
+  if(!c) return {mins:null,label:'—'};
+  let target=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),c.h,c.m,0,0));
+  if(isWeekendUtc(now)){
+    const nbd=nextBusinessDayUtc(now);
+    target=new Date(Date.UTC(nbd.getUTCFullYear(),nbd.getUTCMonth(),nbd.getUTCDate(),c.h,c.m,0,0));
+  } else if(now>target){
+    const nbd=nextBusinessDayUtc(now);
+    target=new Date(Date.UTC(nbd.getUTCFullYear(),nbd.getUTCMonth(),nbd.getUTCDate(),c.h,c.m,0,0));
+  }
+  const mins=Math.max(0,Math.ceil((target-now)/60000));
+  const h=Math.floor(mins/60), m=mins%60;
+  return {mins,label:`${h}h ${m}m`};
+}
+function enrichIndexesCloseIn(){
+  const now=new Date();
+  (financeData.indexes||[]).forEach(x=>{const c=computeCloseIn(x.symbol,now); x.closeInMinutes=c.mins; x.closeInLabel=c.label;});
+}
+function yahooQuoteUrl(sym){return `https://finance.yahoo.com/quote/${encodeURIComponent(sym||'')}`}
+function vanguardUrl(sym){return `https://investor.vanguard.com/investment-products/etfs/profile/${String(sym||'').toLowerCase()}`}
+function link(name,symbol,kind){const n=esc(name||'—'), s=esc(symbol||''); if(kind==='etf'&&symbol) return `<a class="alink" href="${vanguardUrl(symbol)}" target="_blank" rel="noopener noreferrer">${n} <span class="muted">${s}</span></a>`; if(symbol) return `<a class="alink" href="${yahooQuoteUrl(symbol)}" target="_blank" rel="noopener noreferrer">${n} <span class="muted">${s}</span></a>`; return `${n} <span class="muted">${s}</span>`;}
+
+function cardRow(x,kind){
+  const closeCol = kind==='indexes' ? `<td class="neu">${esc(x.closeInLabel||'—')}</td>` : '';
+  return `<tr><td>${link(x.name,x.symbol,kind)}</td><td>${money(resolvedPrice(x))}</td>${closeCol}<td class="${cls(x.changePctToday)}">${pct(x.changePctToday)}</td><td class="${cls(x.ytdPct)}">${pct(x.ytdPct)}</td><td class="${cls(x.oneYearPct)}">${pct(x.oneYearPct)}</td><td class="${cls(x.threeYearPct)}">${pct(x.threeYearPct)}</td><td class="${cls(x.fiveYearPct)}">${pct(x.fiveYearPct)}</td><td>${slider(x.week52Low,x.week52High,x.week52PosPct)}</td></tr>`
+}
+
+function renderFinanceTop(){
+  const root=$('financeTop'); root.innerHTML='';
+  for(const [k,title] of defs){
+    const key=k==='crypto'?'cryptoTop10':k;
+    const base=financeData[key]||[];
+    const rows=sortRows(base,cSort[k]);
+    const shown=showAll[k]?rows:rows.slice(0,5);
+    const btn=showAll[k]?'Show top 5':'Show all';
+    const total=rows.length;
+    const card=document.createElement('div'); card.className='card';
+    const closeHead = k==='indexes' ? `<th class="sort" data-cs="${k}" data-k="closeInMinutes">Closes in <span class="arr">↕</span></th>` : '';
+    const colCount = k==='indexes' ? 9 : 8;
+    card.innerHTML=`<div class="head"><b>${title}</b><button class="btn" data-card="${k}">${btn}</button></div><div class="tableWrap"><table><thead><tr>
+      <th class="sort" data-cs="${k}" data-k="name" data-t="str">Company <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="currentPrice">Price <span class="arr">↕</span></th>
+      ${closeHead}
+      <th class="sort" data-cs="${k}" data-k="changePctToday">Today <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="ytdPct">YTD <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="oneYearPct">1Y <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="threeYearPct">3Y <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="fiveYearPct">5Y <span class="arr">↕</span></th>
+      <th class="sort" data-cs="${k}" data-k="week52PosPct">52W <span class="arr">↕</span></th>
+    </tr></thead><tbody>${shown.map(r=>cardRow(r,k)).join('') || `<tr><td colspan="${colCount}" class="muted">No data</td></tr>`}</tbody></table></div><div class="sub" style="padding:8px 10px">Showing ${shown.length} of ${total}</div>`;
+    root.appendChild(card);
+  }
+
+  document.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>{const k=b.dataset.card;const w=showAll[k];Object.keys(showAll).forEach(x=>showAll[x]=false);showAll[k]=!w;renderFinanceTop();});
+  document.querySelectorAll('th.sort[data-cs]').forEach(th=>th.onclick=()=>{const k=th.dataset.cs,key=th.dataset.k,t=th.dataset.t||'num',s=cSort[k];if(s.k===key)s.d=s.d==='asc'?'desc':'asc';else{s.k=key;s.t=t;s.d=t==='str'?'asc':'desc';}renderFinanceTop();});
+}
+
+function renderMain(){
+  const rows=sortRows(financeData.topUsMcapTracked||[],mSort), root=$('mainRows');
+  root.innerHTML=rows.map((x,i)=>`<tr><td>${i+1}</td><td>${link(x.name,x.symbol,'stock')}</td><td>${money(resolvedPrice(x))}</td><td class="${cls(x.changePctToday)}">${pct(x.changePctToday)}</td><td class="${cls(x.ytdPct)}">${pct(x.ytdPct)}</td><td class="${cls(x.oneYearPct)}">${pct(x.oneYearPct)}</td><td class="${cls(x.threeYearPct)}">${pct(x.threeYearPct)}</td><td class="${cls(x.fiveYearPct)}">${pct(x.fiveYearPct)}</td><td>${cap(x.marketCap)}</td><td>${slider(x.week52Low,x.week52High,x.week52PosPct)}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">No data</td></tr>';
+}
+
+document.querySelectorAll('th.sort[data-main]').forEach(th=>th.onclick=()=>{const k=th.dataset.main,t=th.dataset.type||'num';if(mSort.k===k)mSort.d=mSort.d==='asc'?'desc':'asc';else{mSort.k=k;mSort.t=t;mSort.d=t==='str'?'asc':'desc';}renderMain();});
+
+function newsItem(it){
+  const img = it.image ? `<img class="thumb" src="${esc(it.image)}" loading="lazy"/>` : '';
+  return `<div class="newsItem ${it.image?'':'noimg'}">${img}<div><a class="alink newsTitle" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a><div class="meta">${esc(it.source || '')}${it.published ? ' • ' + esc(it.published) : ''}</div></div></div>`;
+}
+
+function orderedNewsCategories(cats){
+  let saved=[];
+  try{ saved=JSON.parse(localStorage.getItem(NEWS_ORDER_KEY)||'[]'); }catch{}
+  const byKey=new Map(cats.map(c=>[c.key,c]));
+  const ordered=[];
+  for(const k of saved){ if(byKey.has(k)){ ordered.push(byKey.get(k)); byKey.delete(k);} }
+  for(const c of cats){ if(byKey.has(c.key)){ ordered.push(c); byKey.delete(c.key);} }
+  localStorage.setItem(NEWS_ORDER_KEY, JSON.stringify(ordered.map(c=>c.key)));
+  return ordered;
+}
+
+function moveNewsCard(fromKey,toKey){
+  if(!fromKey||!toKey||fromKey===toKey) return;
+  const cats=orderedNewsCategories(newsData.categories||[]);
+  const fromIdx=cats.findIndex(c=>c.key===fromKey);
+  const toIdx=cats.findIndex(c=>c.key===toKey);
+  if(fromIdx<0||toIdx<0) return;
+  const [moved]=cats.splice(fromIdx,1);
+  cats.splice(toIdx,0,moved);
+  localStorage.setItem(NEWS_ORDER_KEY, JSON.stringify(cats.map(c=>c.key)));
+  renderNews();
+}
+
+function renderNews(){
+  const root=$('newsGrid');
+  const cats=orderedNewsCategories(newsData.categories||[]);
+  root.innerHTML = cats.map(c=>`<div class="newsCard" data-key="${esc(c.key)}"><div class="newsHead" draggable="true">${esc(c.title)}</div>${(c.items||[]).slice(0,5).map(newsItem).join('') || '<div class="newsItem noimg"><div class="meta">No stories yet.</div></div>'}</div>`).join('');
+
+  root.querySelectorAll('.newsHead').forEach(h=>{
+    h.addEventListener('dragstart', e=>{
+      draggedNewsKey=h.closest('.newsCard')?.dataset?.key||null;
+      if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', draggedNewsKey||''); }
+    });
+    h.addEventListener('dragend', ()=>{
+      draggedNewsKey=null;
+      root.querySelectorAll('.newsCard.dragOver').forEach(c=>c.classList.remove('dragOver'));
+    });
+  });
+
+  root.querySelectorAll('.newsCard').forEach(card=>{
+    card.addEventListener('dragover', e=>{ e.preventDefault(); card.classList.add('dragOver'); });
+    card.addEventListener('dragleave', ()=>card.classList.remove('dragOver'));
+    card.addEventListener('drop', e=>{
+      e.preventDefault();
+      const toKey=card.dataset.key;
+      const fromKey=draggedNewsKey || (e.dataTransfer?e.dataTransfer.getData('text/plain'):'');
+      root.querySelectorAll('.newsCard.dragOver').forEach(c=>c.classList.remove('dragOver'));
+      moveNewsCard(fromKey,toKey);
+    });
+  });
+}
+
+async function fetchFinance(){ const r=await fetch(`latest.json?t=${Date.now()}`,{cache:'no-store'}); financeData=await r.json(); enrichIndexesCloseIn(); }
+async function fetchNews(){ const r=await fetch(`news.json?t=${Date.now()}`,{cache:'no-store'}); newsData=await r.json(); }
+
+function applyTab(){
+  if(activeTab!=='finance' && activeTab!=='news') activeTab='finance';
+  localStorage.setItem(TAB_KEY, activeTab);
+  $('financeSection').classList.toggle('hidden', activeTab!=='finance');
+  $('newsSection').classList.toggle('hidden', activeTab!=='news');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===activeTab));
+  const ts = activeTab==='finance' ? (financeData.generatedAtEtDisplay||'— ET') : (newsData.generatedAtEtDisplay||'— ET');
+  $('stamp').textContent = `Last refreshed: ${ts}`;
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  activeTab=t.dataset.tab;
+  localStorage.setItem(TAB_KEY, activeTab);
+  applyTab();
+});
+
+$('refreshBtn').onclick = async ()=>{
+  const btn=$('refreshBtn'); btn.disabled=true; btn.textContent='⟳ Refreshing...';
+  try {
+    await fetch(`/api/refresh?tab=${activeTab}`, { cache:'no-store' });
+    if (activeTab==='finance') { await fetchFinance(); renderFinanceTop(); renderMain(); }
+    else { await fetchNews(); renderNews(); }
+    applyTab();
+  } finally {
+    btn.disabled=false; btn.textContent='⟳ Refresh';
+  }
+};
+
+async function boot(){
+  try { await fetchFinance(); renderFinanceTop(); renderMain(); } catch {}
+  try { await fetchNews(); renderNews(); } catch {}
+  applyTab();
+}
+boot();
+setInterval(async()=>{ if(activeTab==='finance'){ try{await fetchFinance();renderFinanceTop();renderMain();applyTab();}catch{} } else { try{await fetchNews();renderNews();applyTab();}catch{} } }, 60000);
+</script>
+</body></html>
