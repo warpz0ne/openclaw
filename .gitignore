@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .tmp/
+node_modules/
+memory/blossom-slot-state.json
+tmp_bl_check.js

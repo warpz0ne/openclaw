@@ -11,6 +11,7 @@ _Learn about the person you're helping. Update this as you go._
   ET
 - **Notes:**
   First setup complete. Preferred assistant vibe: calm.
+  Prefer all alert/message timestamps in Eastern Time by default unless explicitly requested otherwise.
 
 ## Context
 

@@ -22,6 +22,16 @@ TOP = [
     ("TSLA", "Tesla", "tsla.us"),
     ("BRK-B", "Berkshire Hathaway", "brk-b.us"),
     ("WMT", "Walmart", "wmt.us"),
+    ("JPM", "JPMorgan Chase", "jpm.us"),
+    ("V", "Visa", "v.us"),
+    ("MA", "Mastercard", "ma.us"),
+    ("LLY", "Eli Lilly", "lly.us"),
+    ("ORCL", "Oracle", "orcl.us"),
+    ("XOM", "Exxon Mobil", "xom.us"),
+    ("COST", "Costco", "cost.us"),
+    ("HD", "Home Depot", "hd.us"),
+    ("PG", "Procter & Gamble", "pg.us"),
+    ("NFLX", "Netflix", "nflx.us"),
 ]
 
 # (label, stooq_symbol, yahoo_symbol, region)
@@ -317,7 +327,7 @@ def main():
         "indexes": indexes,
         "cryptoTop10": crypto,
         "etfs": etfs,
-        "topUsMcapTracked": companies[:10],
+        "topUsMcapTracked": companies[:20],
     }
 
     with open(OUT, "w", encoding="utf-8") as f:
