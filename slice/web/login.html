@@ -51,18 +51,16 @@
       width: 88px;
       height: 88px;
       border-radius: 999px;
-      background: linear-gradient(180deg, rgba(87,231,255,.12), rgba(96,141,255,.08));
-      border: 1px solid rgba(130,170,255,.35);
       display: grid;
       place-items: center;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
     }
-    /* Exact same style as homepage header logo, only larger size */
+    /* Exactly the same logo recipe as homepage header, scaled up */
     .logoMiniMatch {
-      width: 38px;
-      height: 38px;
+      width: 64px;
+      height: 64px;
       border-radius: 999px;
       background: conic-gradient(from 210deg,#56e7ff,#5f8cff,#8d6dff,#56e7ff);
+      box-shadow: 0 10px 28px rgba(95,140,255,.28);
     }
 
     h1 {
@@ -142,7 +140,7 @@
            data-type="standard"
            data-shape="pill"
            data-theme="filled_black"
-           data-text="continue_with"
+           data-text="signin_with"
            data-size="large"
            data-logo_alignment="left"
            data-width="320"></div>
@@ -193,11 +191,11 @@
         window.google.accounts.id.disableAutoSelect();
       }
 
-      // Stronger logout: revoke remembered app session for the just-logged-out account
-      // so the button returns to generic "Continue with Google" instead of personalized chip.
-      const email = queryParams().get('email');
-      if (isLoggedOutFlag() && email && window.google?.accounts?.id?.revoke) {
-        window.google.accounts.id.revoke(email, () => {});
+      // Clean URL after showing logout state once.
+      if (isLoggedOutFlag()) {
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete('logged_out');
+        window.history.replaceState({}, '', clean.pathname + (clean.search ? clean.search : ''));
       }
     });
   </script>
