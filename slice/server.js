@@ -4,13 +4,19 @@ const path = require('path');
 const { execFile } = require('child_process');
 const crypto = require('crypto');
 const https = require('https');
+const querystring = require('querystring');
 
 const ROOT = path.join(__dirname, 'web');
 const PORT = process.env.PORT || 8787;
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://dudda.cloud/auth/google/callback';
+
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const SESSION_COOKIE = 'slice_session';
 const SESSION_SECURE = process.env.SESSION_SECURE === '1';
+
 const ALLOWED_EMAILS = new Set(
   (process.env.ALLOWED_EMAILS || '')
     .split(',')
@@ -19,6 +25,7 @@ const ALLOWED_EMAILS = new Set(
 );
 
 const sessions = new Map();
+const oauthStates = new Map();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -100,55 +107,6 @@ function clearSession(token) {
   if (token) sessions.delete(token);
 }
 
-function readJsonBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-      if (data.length > 1_000_000) {
-        reject(new Error('Body too large'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(data ? JSON.parse(data) : {});
-      } catch {
-        reject(new Error('Invalid JSON'));
-      }
-    });
-    req.on('error', reject);
-  });
-}
-
-function verifyGoogleIdToken(idToken) {
-  const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
-  return new Promise((resolve, reject) => {
-    https.get(url, resp => {
-      let raw = '';
-      resp.on('data', d => (raw += d));
-      resp.on('end', () => {
-        if (resp.statusCode !== 200) return reject(new Error('Google token verification failed'));
-        try {
-          const payload = JSON.parse(raw);
-          if (!payload || payload.aud !== GOOGLE_CLIENT_ID) return reject(new Error('Invalid audience'));
-          if (payload.email_verified !== 'true') return reject(new Error('Email not verified'));
-          const email = (payload.email || '').toLowerCase();
-          if (ALLOWED_EMAILS.size && !ALLOWED_EMAILS.has(email)) return reject(new Error('Email not allowed'));
-          resolve({
-            sub: payload.sub,
-            email,
-            name: payload.name || email,
-            picture: payload.picture || ''
-          });
-        } catch {
-          reject(new Error('Invalid token payload'));
-        }
-      });
-    }).on('error', reject);
-  });
-}
-
 function sendJson(res, status, body, extraHeaders = {}) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -158,8 +116,93 @@ function sendJson(res, status, body, extraHeaders = {}) {
   res.end(JSON.stringify(body));
 }
 
+function httpsRequest({ hostname, path, method = 'GET', headers = {}, body = '' }) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({ hostname, path, method, headers }, resp => {
+      let raw = '';
+      resp.on('data', d => (raw += d));
+      resp.on('end', () => resolve({ statusCode: resp.statusCode || 0, body: raw }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function verifyGoogleIdToken(idToken) {
+  const path = `/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
+  const resp = await httpsRequest({ hostname: 'oauth2.googleapis.com', path, method: 'GET' });
+  if (resp.statusCode !== 200) throw new Error('Google token verification failed');
+
+  let payload;
+  try { payload = JSON.parse(resp.body); } catch { throw new Error('Invalid token payload'); }
+
+  if (!payload || payload.aud !== GOOGLE_CLIENT_ID) throw new Error('Invalid audience');
+  if (payload.email_verified !== 'true') throw new Error('Email not verified');
+
+  const email = (payload.email || '').toLowerCase();
+  if (ALLOWED_EMAILS.size && !ALLOWED_EMAILS.has(email)) throw new Error('Email not allowed');
+
+  return {
+    sub: payload.sub,
+    email,
+    name: payload.name || email,
+    picture: payload.picture || ''
+  };
+}
+
+function buildGoogleAuthUrl(state) {
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'offline',
+    include_granted_scopes: 'true',
+    prompt: 'select_account',
+    state
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+async function exchangeCodeForToken(code) {
+  const body = querystring.stringify({
+    code,
+    client_id: GOOGLE_CLIENT_ID,
+    client_secret: GOOGLE_CLIENT_SECRET,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    grant_type: 'authorization_code'
+  });
+
+  const resp = await httpsRequest({
+    hostname: 'oauth2.googleapis.com',
+    path: '/token',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(body)
+    },
+    body
+  });
+
+  let payload;
+  try { payload = JSON.parse(resp.body); } catch { throw new Error('Invalid token response'); }
+  if (resp.statusCode !== 200 || !payload?.id_token) {
+    throw new Error(payload?.error_description || payload?.error || 'OAuth token exchange failed');
+  }
+
+  return payload.id_token;
+}
+
 function requireAuth(req, res, urlObj) {
-  const publicPaths = new Set(['/login', '/auth/google', '/auth/logout', '/auth/me', '/slice-logo.svg']);
+  const publicPaths = new Set([
+    '/login',
+    '/auth/google/start',
+    '/auth/google/callback',
+    '/auth/logout',
+    '/auth/me',
+    '/slice-logo.svg'
+  ]);
   if (publicPaths.has(urlObj.pathname)) return { ok: true, session: null };
 
   const sess = getSession(req);
@@ -169,102 +212,130 @@ function requireAuth(req, res, urlObj) {
     sendJson(res, 401, { ok: false, error: 'unauthorized' });
     return { ok: false };
   }
+
   res.writeHead(302, { Location: '/login' });
   res.end();
   return { ok: false };
 }
 
-http
-  .createServer(async (req, res) => {
-    try {
-      const urlObj = new URL(req.url, `http://${req.headers.host}`);
+setInterval(() => {
+  const now = Date.now();
+  for (const [state, createdAt] of oauthStates.entries()) {
+    if (now - createdAt > 10 * 60 * 1000) oauthStates.delete(state);
+  }
+}, 60 * 1000).unref();
 
-      if (!GOOGLE_CLIENT_ID) {
-        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-        return res.end('Server misconfigured: GOOGLE_CLIENT_ID is required');
-      }
+http.createServer(async (req, res) => {
+  try {
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
 
-      if (urlObj.pathname === '/auth/google' && req.method === 'POST') {
-        try {
-          const body = await readJsonBody(req);
-          if (!body.credential) return sendJson(res, 400, { ok: false, error: 'Missing credential' });
-          const user = await verifyGoogleIdToken(body.credential);
-          const token = createSession(user);
-          return sendJson(
-            res,
-            200,
-            { ok: true, user },
-            { 'Set-Cookie': makeCookie(SESSION_COOKIE, token, Math.floor(SESSION_TTL_MS / 1000)) }
-          );
-        } catch (e) {
-          return sendJson(res, 401, { ok: false, error: String(e.message || e) });
-        }
-      }
-
-      if (urlObj.pathname === '/auth/logout' && req.method === 'POST') {
-        const sess = getSession(req);
-        if (sess?.token) clearSession(sess.token);
-        return sendJson(
-          res,
-          200,
-          { ok: true },
-          { 'Set-Cookie': makeCookie(SESSION_COOKIE, '', 0) }
-        );
-      }
-
-      if (urlObj.pathname === '/auth/me') {
-        const sess = getSession(req);
-        return sendJson(res, 200, { ok: !!sess, user: sess?.user || null });
-      }
-
-      const gate = requireAuth(req, res, urlObj);
-      if (!gate.ok) return;
-
-      if (urlObj.pathname === '/api/refresh') {
-        const tab = (urlObj.searchParams.get('tab') || 'all').toLowerCase();
-        try {
-          await refreshDataset(tab);
-          return sendJson(res, 200, { ok: true, tab });
-        } catch (e) {
-          return sendJson(res, 500, { ok: false, error: String(e.message || e) });
-        }
-      }
-
-      if (urlObj.pathname === '/login') {
-        const htmlPath = path.join(ROOT, 'login.html');
-        const html = fs.readFileSync(htmlPath, 'utf8').replaceAll('__GOOGLE_CLIENT_ID__', GOOGLE_CLIENT_ID);
-        res.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'no-store'
-        });
-        return res.end(html);
-      }
-
-      let reqPath = urlObj.pathname;
-      if (reqPath === '/') reqPath = '/index.html';
-      const filePath = path.normalize(path.join(ROOT, reqPath));
-
-      if (!filePath.startsWith(ROOT)) {
-        res.writeHead(403);
-        return res.end('Forbidden');
-      }
-
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.writeHead(404);
-          return res.end('Not found');
-        }
-        const ext = path.extname(filePath).toLowerCase();
-        res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
-        res.setHeader('Cache-Control', ext === '.json' ? 'no-cache' : 'public, max-age=60');
-        res.writeHead(200);
-        res.end(data);
-      });
-    } catch (e) {
-      res.writeHead(500);
-      res.end('Server error');
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Server misconfigured: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required');
     }
-  })
-  .listen(PORT, '127.0.0.1', () => {
-    console.log(`Slice server running at http://127.0.0.1:${PORT}`);
-  });
+
+    if (urlObj.pathname === '/auth/google/start') {
+      const state = crypto.randomBytes(24).toString('hex');
+      oauthStates.set(state, Date.now());
+      res.writeHead(302, { Location: buildGoogleAuthUrl(state) });
+      return res.end();
+    }
+
+    if (urlObj.pathname === '/auth/google/callback') {
+      const state = urlObj.searchParams.get('state') || '';
+      const code = urlObj.searchParams.get('code') || '';
+      const err = urlObj.searchParams.get('error') || '';
+
+      if (err) {
+        res.writeHead(302, { Location: `/login?error=${encodeURIComponent(err)}` });
+        return res.end();
+      }
+
+      if (!state || !oauthStates.has(state) || !code) {
+        res.writeHead(302, { Location: '/login?error=invalid_oauth_state' });
+        return res.end();
+      }
+      oauthStates.delete(state);
+
+      try {
+        const idToken = await exchangeCodeForToken(code);
+        const user = await verifyGoogleIdToken(idToken);
+        const token = createSession(user);
+
+        res.writeHead(302, {
+          'Set-Cookie': makeCookie(SESSION_COOKIE, token, Math.floor(SESSION_TTL_MS / 1000)),
+          Location: '/'
+        });
+        return res.end();
+      } catch (e) {
+        res.writeHead(302, { Location: `/login?error=${encodeURIComponent(String(e.message || e))}` });
+        return res.end();
+      }
+    }
+
+    if (urlObj.pathname === '/auth/logout' && req.method === 'POST') {
+      const sess = getSession(req);
+      if (sess?.token) clearSession(sess.token);
+      return sendJson(
+        res,
+        200,
+        { ok: true },
+        { 'Set-Cookie': makeCookie(SESSION_COOKIE, '', 0) }
+      );
+    }
+
+    if (urlObj.pathname === '/auth/me') {
+      const sess = getSession(req);
+      return sendJson(res, 200, { ok: !!sess, user: sess?.user || null });
+    }
+
+    const gate = requireAuth(req, res, urlObj);
+    if (!gate.ok) return;
+
+    if (urlObj.pathname === '/api/refresh') {
+      const tab = (urlObj.searchParams.get('tab') || 'all').toLowerCase();
+      try {
+        await refreshDataset(tab);
+        return sendJson(res, 200, { ok: true, tab });
+      } catch (e) {
+        return sendJson(res, 500, { ok: false, error: String(e.message || e) });
+      }
+    }
+
+    if (urlObj.pathname === '/login') {
+      const htmlPath = path.join(ROOT, 'login.html');
+      const html = fs.readFileSync(htmlPath, 'utf8');
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      return res.end(html);
+    }
+
+    let reqPath = urlObj.pathname;
+    if (reqPath === '/') reqPath = '/index.html';
+    const filePath = path.normalize(path.join(ROOT, reqPath));
+
+    if (!filePath.startsWith(ROOT)) {
+      res.writeHead(403);
+      return res.end('Forbidden');
+    }
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        return res.end('Not found');
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
+      res.setHeader('Cache-Control', ext === '.json' ? 'no-cache' : 'public, max-age=60');
+      res.writeHead(200);
+      res.end(data);
+    });
+  } catch (e) {
+    res.writeHead(500);
+    res.end('Server error');
+  }
+}).listen(PORT, '127.0.0.1', () => {
+  console.log(`Slice server running at http://127.0.0.1:${PORT}`);
+});

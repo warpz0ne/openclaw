@@ -21,6 +21,8 @@ Set:
 
 ```bash
 GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=YOUR_WEB_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=https://dudda.cloud/auth/google/callback
 ALLOWED_EMAILS=girgitley@gmail.com
 SESSION_SECURE=1
 ```

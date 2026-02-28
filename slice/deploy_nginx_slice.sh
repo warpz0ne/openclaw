@@ -37,6 +37,8 @@ if [ ! -f /etc/default/slice ]; then
   sudo tee /etc/default/slice >/dev/null <<'EOF'
 # Slice auth env
 GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://dudda.cloud/auth/google/callback
 ALLOWED_EMAILS=
 SESSION_SECURE=1
 EOF

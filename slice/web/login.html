@@ -26,13 +26,12 @@
       border: 1px solid rgba(94, 132, 214, 0.32);
       border-radius: 22px;
       background: linear-gradient(180deg, rgba(13,24,47,.84) 0%, rgba(10,18,36,.9) 100%);
-      box-shadow:
-        0 20px 60px rgba(0,0,0,.5),
-        inset 0 1px 0 rgba(255,255,255,.06);
+      box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
       backdrop-filter: blur(10px);
       padding: 34px 30px 26px;
       position: relative;
       overflow: hidden;
+      text-align: center;
     }
 
     .shell::before {
@@ -46,15 +45,7 @@
       pointer-events: none;
     }
 
-    .brand { display: grid; justify-items: center; gap: 10px; }
-    .logoWrap {
-      width: 88px;
-      height: 88px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-    }
-    /* Exactly the same logo recipe as homepage header, scaled up */
+    .logoWrap { width: 88px; height: 88px; border-radius: 999px; display: grid; place-items: center; margin: 0 auto; }
     .logoMiniMatch {
       width: 64px;
       height: 64px;
@@ -63,52 +54,49 @@
       box-shadow: 0 10px 28px rgba(95,140,255,.28);
     }
 
-    h1 {
-      margin: 2px 0 0;
-      font-size: 44px;
-      line-height: 1;
+    h1 { margin: 6px 0 0; font-size: 44px; line-height: 1; letter-spacing: .2px; font-weight: 700; color: #eef3ff; }
+    .sub { margin: 8px 0 0; color: #a6b3cd; font-size: 16px; }
+
+    .signinWrap { margin: 26px auto 0; display: flex; justify-content: center; }
+
+    .googleBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(180deg, #1a2337, #131c2f);
+      color: #eaf0ff;
+      border: 1px solid rgba(130, 163, 230, .45);
+      border-radius: 999px;
+      padding: 11px 18px;
+      text-decoration: none;
+      font-weight: 600;
       letter-spacing: .2px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+      transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .googleBtn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(144, 187, 255, .7);
+      box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(94,145,255,.16) inset;
+    }
+    .gmark {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #fff;
+      display: grid;
+      place-items: center;
       font-weight: 700;
-      color: #eef3ff;
-    }
-
-    .sub {
-      margin: 4px 0 0;
-      color: #a6b3cd;
+      font-family: Arial, sans-serif;
+      color: #4285f4;
       font-size: 16px;
-      text-align: center;
+      line-height: 1;
     }
 
-    .signinWrap {
-      margin: 24px auto 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      min-height: 48px;
-    }
-
-    #status {
-      margin-top: 14px;
-      min-height: 20px;
-      color: #99a9c8;
-      text-align: center;
-      font-size: 13px;
-    }
-
-    .hint {
-      margin-top: 18px;
-      color: #7f92b7;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    .logoutNote {
-      margin-top: 8px;
-      color: #8ba0c9;
-      text-align: center;
-      font-size: 12px;
-      opacity: .95;
-    }
+    #status { margin-top: 14px; min-height: 20px; color: #99a9c8; font-size: 13px; }
+    #status.err { color: #ff8f8f; }
+    .hint { margin-top: 18px; color: #7f92b7; font-size: 12px; }
+    .logoutNote { margin-top: 8px; color: #8ba0c9; font-size: 12px; opacity: .95; }
 
     @media (max-width: 520px) {
       .shell { padding: 26px 18px 20px; border-radius: 18px; }
@@ -119,31 +107,15 @@
 </head>
 <body>
   <main class="shell">
-    <div class="brand">
-      <div class="logoWrap" aria-label="Slice logo">
-        <span class="logoMiniMatch" aria-hidden="true"></span>
-      </div>
-      <h1>Slice</h1>
-      <div class="sub">Private dashboard access</div>
-    </div>
-
-    <div id="g_id_onload"
-         data-client_id="__GOOGLE_CLIENT_ID__"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false"
-         data-itp_support="true"></div>
+    <div class="logoWrap" aria-label="Slice logo"><span class="logoMiniMatch" aria-hidden="true"></span></div>
+    <h1>Slice</h1>
+    <div class="sub">Private dashboard access</div>
 
     <div class="signinWrap">
-      <div class="g_id_signin"
-           data-type="standard"
-           data-shape="pill"
-           data-theme="filled_black"
-           data-text="signin_with"
-           data-size="large"
-           data-logo_alignment="left"
-           data-width="320"></div>
+      <a class="googleBtn" href="/auth/google/start" aria-label="Sign in with Google">
+        <span class="gmark">G</span>
+        <span>Continue with Google</span>
+      </a>
     </div>
 
     <div id="status"></div>
@@ -152,53 +124,23 @@
   </main>
 
   <script>
-    const statusEl = document.getElementById('status');
+    const p = new URLSearchParams(window.location.search);
+    const status = document.getElementById('status');
     const logoutNote = document.getElementById('logoutNote');
 
-    function queryParams() {
-      return new URLSearchParams(window.location.search);
+    if (p.get('logged_out') === '1') logoutNote.hidden = false;
+    const err = p.get('error');
+    if (err) {
+      status.classList.add('err');
+      status.textContent = decodeURIComponent(err).replace(/_/g, ' ');
     }
 
-    function isLoggedOutFlag() {
-      return queryParams().get('logged_out') === '1';
+    if (p.has('logged_out') || p.has('error')) {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('logged_out');
+      clean.searchParams.delete('error');
+      window.history.replaceState({}, '', clean.pathname + (clean.search ? clean.search : ''));
     }
-
-    if (isLoggedOutFlag()) {
-      logoutNote.hidden = false;
-    }
-
-    async function handleCredentialResponse(response) {
-      statusEl.textContent = 'Signing in…';
-      try {
-        const r = await fetch('/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ credential: response.credential })
-        });
-        const data = await r.json();
-        if (!r.ok || !data.ok) throw new Error(data.error || 'Login failed');
-        window.location.href = '/';
-      } catch (e) {
-        statusEl.textContent = String(e.message || e);
-      }
-    }
-
-    window.handleCredentialResponse = handleCredentialResponse;
-
-    window.addEventListener('load', () => {
-      // Force account chooser after app logout to avoid silent re-entry.
-      if (isLoggedOutFlag() && window.google?.accounts?.id?.disableAutoSelect) {
-        window.google.accounts.id.disableAutoSelect();
-      }
-
-      // Clean URL after showing logout state once.
-      if (isLoggedOutFlag()) {
-        const clean = new URL(window.location.href);
-        clean.searchParams.delete('logged_out');
-        window.history.replaceState({}, '', clean.pathname + (clean.search ? clean.search : ''));
-      }
-    });
   </script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
