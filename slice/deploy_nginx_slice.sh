@@ -20,6 +20,7 @@ After=network.target
 Type=simple
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
+EnvironmentFile=-/etc/default/slice
 ExecStart=/usr/bin/node ${APP_DIR}/server.js
 Restart=always
 RestartSec=3
@@ -30,6 +31,18 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
+
+if [ ! -f /etc/default/slice ]; then
+  echo "[2.5/7] Creating /etc/default/slice (fill OAuth values after install)..."
+  sudo tee /etc/default/slice >/dev/null <<'EOF'
+# Slice auth env
+GOOGLE_CLIENT_ID=
+ALLOWED_EMAILS=
+SESSION_SECURE=1
+EOF
+  sudo chmod 600 /etc/default/slice
+fi
+
 sudo systemctl enable --now slice.service
 
 

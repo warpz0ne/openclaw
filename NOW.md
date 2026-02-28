@@ -1,6 +1,6 @@
 # NOW.md
 
-Last updated: 2026-02-28 16:34 UTC
+Last updated: 2026-02-28 17:54 UTC
 
 ## Current Objective
 Set up durable session continuity so context survives overnight and across restarts.
@@ -14,7 +14,7 @@ Rebuild continuity workflow before resuming feature/project work.
 3. End each session with a handoff snapshot (Done / In progress / Next step).
 
 ## Open Thread to Resume
-Slice auth wall implemented in code. Next: configure Google OAuth Web client for dudda.cloud, set env vars, restart Slice service, verify login/logout end-to-end.
+Slice auth wall implemented and deployment runbook prepared. Next: configure Google OAuth Web client for dudda.cloud, set env vars in /etc/default/slice, restart service, verify login/logout end-to-end.
 
 ## Session Handoff Template
 - Done:
