@@ -57,13 +57,12 @@
       place-items: center;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
     }
-    /* Match homepage mini logo, just larger */
+    /* Exact same style as homepage header logo, only larger size */
     .logoMiniMatch {
-      width: 62px;
-      height: 62px;
+      width: 38px;
+      height: 38px;
       border-radius: 999px;
       background: conic-gradient(from 210deg,#56e7ff,#5f8cff,#8d6dff,#56e7ff);
-      box-shadow: 0 8px 28px rgba(95,140,255,.35), inset 0 0 0 1px rgba(255,255,255,.18);
     }
 
     h1 {
@@ -143,7 +142,7 @@
            data-type="standard"
            data-shape="pill"
            data-theme="filled_black"
-           data-text="signin_with"
+           data-text="continue_with"
            data-size="large"
            data-logo_alignment="left"
            data-width="320"></div>
@@ -158,9 +157,12 @@
     const statusEl = document.getElementById('status');
     const logoutNote = document.getElementById('logoutNote');
 
+    function queryParams() {
+      return new URLSearchParams(window.location.search);
+    }
+
     function isLoggedOutFlag() {
-      const p = new URLSearchParams(window.location.search);
-      return p.get('logged_out') === '1';
+      return queryParams().get('logged_out') === '1';
     }
 
     if (isLoggedOutFlag()) {
@@ -189,6 +191,13 @@
       // Force account chooser after app logout to avoid silent re-entry.
       if (isLoggedOutFlag() && window.google?.accounts?.id?.disableAutoSelect) {
         window.google.accounts.id.disableAutoSelect();
+      }
+
+      // Stronger logout: revoke remembered app session for the just-logged-out account
+      // so the button returns to generic "Continue with Google" instead of personalized chip.
+      const email = queryParams().get('email');
+      if (isLoggedOutFlag() && email && window.google?.accounts?.id?.revoke) {
+        window.google.accounts.id.revoke(email, () => {});
       }
     });
   </script>
