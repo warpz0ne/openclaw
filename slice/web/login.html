@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Slice Login</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(1200px 600px at 30% 10%, #1a2a4c 0%, #070b14 55%);
+      color: #e7ecf6;
+      font-family: 'Segoe UI Variable','Segoe UI','Inter','SF Pro Text',system-ui;
+      padding: 20px;
+    }
+    .card {
+      width: min(460px, 96vw);
+      border: 1px solid #1d2943;
+      border-radius: 16px;
+      background: rgba(13,20,36,0.92);
+      backdrop-filter: blur(8px);
+      padding: 26px 22px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.35);
+      text-align: center;
+    }
+    .logo { width: 84px; height: 84px; margin: 0 auto 14px; display: block; }
+    h1 { margin: 0; font-size: 30px; letter-spacing: .3px; }
+    .sub { color: #9ba7bf; margin: 8px 0 22px; font-size: 14px; }
+    #status { color: #9ba7bf; margin-top: 12px; min-height: 20px; font-size: 13px; }
+    .hint { color: #7586a8; margin-top: 14px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="/slice-logo.svg" alt="Slice logo" />
+    <h1>Slice</h1>
+    <div class="sub">Sign in to access your dashboard</div>
+
+    <div id="g_id_onload"
+         data-client_id="__GOOGLE_CLIENT_ID__"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false"></div>
+
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="pill"
+         data-theme="filled_black"
+         data-text="continue_with"
+         data-size="large"
+         data-logo_alignment="left"></div>
+
+    <div id="status"></div>
+    <div class="hint">Only approved Google accounts can access this app.</div>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+
+    async function handleCredentialResponse(response) {
+      statusEl.textContent = 'Signing in…';
+      try {
+        const r = await fetch('/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.error || 'Login failed');
+        window.location.href = '/';
+      } catch (e) {
+        statusEl.textContent = String(e.message || e);
+      }
+    }
+
+    window.handleCredentialResponse = handleCredentialResponse;
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>
