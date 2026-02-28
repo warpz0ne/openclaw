@@ -36,7 +36,10 @@ th.sort{cursor:pointer}.arr{font-size:10px;color:#6d7c99}.arr.a{color:#89a8ff}
       <button class="tab" data-tab="finance">Finance</button>
       <button class="tab" data-tab="news">News</button>
     </div>
-    <button class="btn" id="refreshBtn">⟳ Refresh</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="refreshBtn">⟳ Refresh</button>
+      <button class="btn" id="logoutBtn">Log out</button>
+    </div>
   </div>
 
   <section id="financeSection" class="section">
@@ -242,6 +245,16 @@ $('refreshBtn').onclick = async ()=>{
     applyTab();
   } finally {
     btn.disabled=false; btn.textContent='⟳ Refresh';
+  }
+};
+
+$('logoutBtn').onclick = async ()=>{
+  const btn=$('logoutBtn');
+  btn.disabled=true;
+  try {
+    await fetch('/auth/logout', { method:'POST' });
+  } finally {
+    window.location.href = '/login';
   }
 };
 

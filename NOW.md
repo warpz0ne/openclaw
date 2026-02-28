@@ -1,6 +1,6 @@
 # NOW.md
 
-Last updated: 2026-02-28 15:31 UTC
+Last updated: 2026-02-28 16:34 UTC
 
 ## Current Objective
 Set up durable session continuity so context survives overnight and across restarts.
@@ -14,7 +14,7 @@ Rebuild continuity workflow before resuming feature/project work.
 3. End each session with a handoff snapshot (Done / In progress / Next step).
 
 ## Open Thread to Resume
-Installed Himalaya + GoPlaces + gog CLIs. Next: complete gog OAuth auth, then define sender/type-based email automation rules and scheduling.
+Slice auth wall implemented in code. Next: configure Google OAuth Web client for dhudha.cloud, set env vars, restart Slice service, verify login/logout end-to-end.
 
 ## Session Handoff Template
 - Done:
