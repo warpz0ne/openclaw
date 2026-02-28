@@ -54,3 +54,9 @@
   - `memory/YYYY-MM-DD.md` captures same-day checkpoints.
   - `MEMORY.md` keeps only durable preferences/decisions.
 - Expectation: maintain this flow proactively so returning context is immediately available.
+
+## Slice Auth UX Direction (2026-02-28)
+- Domain confirmed: `dudda.cloud`.
+- User wants professional login UX with branding consistency and no clunky Google iframe/chip appearance after logout.
+- Decision: move to custom OAuth button + server-side Google auth callback flow for tighter UX control.
+- Added reusable ops helper in repo: `tools/ops/slicectl.sh` (status/restart/log/test/env). 
