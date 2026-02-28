@@ -1,6 +1,6 @@
 # NOW.md
 
-Last updated: 2026-02-28 14:50 UTC
+Last updated: 2026-02-28 14:53 UTC
 
 ## Current Objective
 Set up durable session continuity so context survives overnight and across restarts.
@@ -14,7 +14,7 @@ Rebuild continuity workflow before resuming feature/project work.
 3. End each session with a handoff snapshot (Done / In progress / Next step).
 
 ## Open Thread to Resume
-Skills installation/status check was discussed; exact checkpoint was not yet written in memory.
+Top-5 skills checkpoint requested and verified; all requested skills are installed.
 
 ## Session Handoff Template
 - Done:
