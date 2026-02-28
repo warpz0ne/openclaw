@@ -46,3 +46,11 @@
 - Current focus selected for deeper exploration: **Medical Bill Defense Copilot**.
 - Budget signal: willing to invest up to **$500** initially for cloud/agent expansion (Hostinger vs GCP based on economics).
 - User asked to save this project context and return later to begin implementation.
+
+## Continuity Protocol (2026-02-28)
+- User explicitly asked to stop losing overnight context and maintain stronger continuity between sessions.
+- Continuity system established:
+  - `NOW.md` tracks active objective, immediate next actions, and session handoff.
+  - `memory/YYYY-MM-DD.md` captures same-day checkpoints.
+  - `MEMORY.md` keeps only durable preferences/decisions.
+- Expectation: maintain this flow proactively so returning context is immediately available.
