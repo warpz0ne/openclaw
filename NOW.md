@@ -1,6 +1,6 @@
 # NOW.md
 
-Last updated: 2026-02-28 15:19 UTC
+Last updated: 2026-02-28 15:31 UTC
 
 ## Current Objective
 Set up durable session continuity so context survives overnight and across restarts.
@@ -14,7 +14,7 @@ Rebuild continuity workflow before resuming feature/project work.
 3. End each session with a handoff snapshot (Done / In progress / Next step).
 
 ## Open Thread to Resume
-Installed Himalaya + GoPlaces CLIs. Next: configure Himalaya account(s) and define sender/type-based email automation rules.
+Installed Himalaya + GoPlaces + gog CLIs. Next: complete gog OAuth auth, then define sender/type-based email automation rules and scheduling.
 
 ## Session Handoff Template
 - Done:
