@@ -14,7 +14,7 @@ Rebuild continuity workflow before resuming feature/project work.
 3. End each session with a handoff snapshot (Done / In progress / Next step).
 
 ## Open Thread to Resume
-Slice auth wall implemented in code. Next: configure Google OAuth Web client for dhudha.cloud, set env vars, restart Slice service, verify login/logout end-to-end.
+Slice auth wall implemented in code. Next: configure Google OAuth Web client for dudda.cloud, set env vars, restart Slice service, verify login/logout end-to-end.
 
 ## Session Handoff Template
 - Done:
