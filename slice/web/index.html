@@ -254,7 +254,7 @@ $('logoutBtn').onclick = async ()=>{
   try {
     await fetch('/auth/logout', { method:'POST' });
   } finally {
-    window.location.href = '/login';
+    window.location.href = '/login?logged_out=1';
   }
 };
 

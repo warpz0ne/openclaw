@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Slice Login</title>
+  <title>Slice • Sign in</title>
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
@@ -12,55 +12,153 @@
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background: radial-gradient(1200px 600px at 30% 10%, #1a2a4c 0%, #070b14 55%);
       color: #e7ecf6;
       font-family: 'Segoe UI Variable','Segoe UI','Inter','SF Pro Text',system-ui;
-      padding: 20px;
+      padding: 24px;
+      background:
+        radial-gradient(900px 560px at 18% -8%, rgba(91,140,255,.34), transparent 58%),
+        radial-gradient(1000px 650px at 100% 100%, rgba(88,228,255,.16), transparent 64%),
+        linear-gradient(170deg, #060b16 0%, #050914 45%, #050812 100%);
     }
-    .card {
-      width: min(460px, 96vw);
-      border: 1px solid #1d2943;
-      border-radius: 16px;
-      background: rgba(13,20,36,0.92);
-      backdrop-filter: blur(8px);
-      padding: 26px 22px;
-      box-shadow: 0 12px 35px rgba(0,0,0,.35);
+
+    .shell {
+      width: min(520px, 96vw);
+      border: 1px solid rgba(94, 132, 214, 0.32);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(13,24,47,.84) 0%, rgba(10,18,36,.9) 100%);
+      box-shadow:
+        0 20px 60px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter: blur(10px);
+      padding: 34px 30px 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: -30% -20% auto auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(93,139,255,.26), transparent 65%);
+      pointer-events: none;
+    }
+
+    .brand { display: grid; justify-items: center; gap: 10px; }
+    .logoWrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(87,231,255,.12), rgba(96,141,255,.08));
+      border: 1px solid rgba(130,170,255,.35);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    .logo { width: 72px; height: 72px; display: block; }
+
+    h1 {
+      margin: 2px 0 0;
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: .2px;
+      font-weight: 700;
+      color: #eef3ff;
+    }
+
+    .sub {
+      margin: 4px 0 0;
+      color: #a6b3cd;
+      font-size: 16px;
       text-align: center;
     }
-    .logo { width: 84px; height: 84px; margin: 0 auto 14px; display: block; }
-    h1 { margin: 0; font-size: 30px; letter-spacing: .3px; }
-    .sub { color: #9ba7bf; margin: 8px 0 22px; font-size: 14px; }
-    #status { color: #9ba7bf; margin-top: 12px; min-height: 20px; font-size: 13px; }
-    .hint { color: #7586a8; margin-top: 14px; font-size: 12px; }
+
+    .signinWrap {
+      margin: 24px auto 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      min-height: 48px;
+    }
+
+    #status {
+      margin-top: 14px;
+      min-height: 20px;
+      color: #99a9c8;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .hint {
+      margin-top: 18px;
+      color: #7f92b7;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .logoutNote {
+      margin-top: 8px;
+      color: #8ba0c9;
+      text-align: center;
+      font-size: 12px;
+      opacity: .95;
+    }
+
+    @media (max-width: 520px) {
+      .shell { padding: 26px 18px 20px; border-radius: 18px; }
+      h1 { font-size: 36px; }
+      .sub { font-size: 15px; }
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <img class="logo" src="/slice-logo.svg" alt="Slice logo" />
-    <h1>Slice</h1>
-    <div class="sub">Sign in to access your dashboard</div>
+  <main class="shell">
+    <div class="brand">
+      <div class="logoWrap">
+        <img class="logo" src="/slice-logo.svg" alt="Slice logo" />
+      </div>
+      <h1>Slice</h1>
+      <div class="sub">Private dashboard access</div>
+    </div>
 
     <div id="g_id_onload"
          data-client_id="__GOOGLE_CLIENT_ID__"
          data-context="signin"
          data-ux_mode="popup"
          data-callback="handleCredentialResponse"
-         data-auto_prompt="false"></div>
+         data-auto_prompt="false"
+         data-itp_support="true"></div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="pill"
-         data-theme="filled_black"
-         data-text="continue_with"
-         data-size="large"
-         data-logo_alignment="left"></div>
+    <div class="signinWrap">
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="pill"
+           data-theme="filled_black"
+           data-text="continue_with"
+           data-size="large"
+           data-logo_alignment="left"
+           data-width="320"></div>
+    </div>
 
     <div id="status"></div>
     <div class="hint">Only approved Google accounts can access this app.</div>
+    <div class="logoutNote" id="logoutNote" hidden>Logged out. Choose an account to sign in again.</div>
   </main>
 
   <script>
     const statusEl = document.getElementById('status');
+    const logoutNote = document.getElementById('logoutNote');
+
+    function isLoggedOutFlag() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('logged_out') === '1';
+    }
+
+    if (isLoggedOutFlag()) {
+      logoutNote.hidden = false;
+    }
 
     async function handleCredentialResponse(response) {
       statusEl.textContent = 'Signing in…';
@@ -79,6 +177,13 @@
     }
 
     window.handleCredentialResponse = handleCredentialResponse;
+
+    window.addEventListener('load', () => {
+      // Force account chooser after app logout to avoid silent re-entry.
+      if (isLoggedOutFlag() && window.google?.accounts?.id?.disableAutoSelect) {
+        window.google.accounts.id.disableAutoSelect();
+      }
+    });
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
