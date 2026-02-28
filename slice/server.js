@@ -203,12 +203,11 @@ http
 
       if (urlObj.pathname === '/auth/logout' && req.method === 'POST') {
         const sess = getSession(req);
-        const email = sess?.user?.email || '';
         if (sess?.token) clearSession(sess.token);
         return sendJson(
           res,
           200,
-          { ok: true, email },
+          { ok: true },
           { 'Set-Cookie': makeCookie(SESSION_COOKIE, '', 0) }
         );
       }

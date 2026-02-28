@@ -252,10 +252,8 @@ $('logoutBtn').onclick = async ()=>{
   const btn=$('logoutBtn');
   btn.disabled=true;
   try {
-    const r = await fetch('/auth/logout', { method:'POST' });
-    const data = await r.json().catch(()=>({}));
-    const email = encodeURIComponent(data?.email || '');
-    window.location.href = `/login?logged_out=1${email?`&email=${email}`:''}`;
+    await fetch('/auth/logout', { method:'POST' });
+    window.location.href = '/login?logged_out=1';
   } finally {
     btn.disabled=false;
   }
